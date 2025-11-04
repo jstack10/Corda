@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Journey — Your Path Forward</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="journey-styles.css">
+  </head>
+  <body>
+    <div class="progress-container">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    
+    <main class="journey-container" id="journeyContainer">
+      <section class="step-section" data-step="0">
+        <div class="step-content">
+          <h1 class="step-heading">Welcome to your journey</h1>
+          <div class="step-navigation">
+            <button class="btn primary" id="nextBtn" aria-label="Next step">Next</button>
+          </div>
+        </div>
+      </section>
+      
+      <section class="step-section" data-step="1">
+        <div class="step-content">
+          <h1 class="step-heading">Let's begin</h1>
+          <div class="step-navigation">
+            <button class="btn ghost" id="backBtn" aria-label="Previous step">Back</button>
+            <button class="btn primary" id="nextBtn2" aria-label="Next step">Next</button>
+          </div>
+        </div>
+      </section>
+      
+      <section class="step-section" data-step="2">
+        <div class="step-content">
+          <h1 class="step-heading">You're making progress</h1>
+          <div class="step-navigation">
+            <button class="btn ghost" id="backBtn2" aria-label="Previous step">Back</button>
+          </div>
+        </div>
+      </section>
+    </main>
+    
+    <script src="journey.js"></script>
+  </body>
+</html>
+
