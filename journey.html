@@ -17,7 +17,7 @@
     <main class="journey-container" id="journeyContainer">
       <section class="step-section" data-step="0">
         <div class="step-content">
-          <h1 class="step-heading">Welcome to your journey</h1>
+          <h1 class="step-heading">Welcome to your Journey</h1>
           <div class="step-navigation">
             <button class="btn primary" id="nextBtn" aria-label="Next step">Next</button>
           </div>
@@ -26,19 +26,58 @@
       
       <section class="step-section" data-step="1">
         <div class="step-content">
-          <h1 class="step-heading">Let's begin</h1>
+          <h1 class="step-heading">Let's start with the basics. What's your name?</h1>
+          <div class="form-container">
+            <div class="input-wrapper">
+              <input 
+                type="text" 
+                id="nameInput" 
+                class="form-input" 
+                placeholder="Enter your name" 
+                autocomplete="name"
+                aria-label="Enter your name"
+                aria-describedby="nameError"
+              />
+              <div class="validation-feedback" id="nameValidation">
+                <span class="validation-icon" id="nameIcon" aria-hidden="true"></span>
+                <span class="validation-message" id="nameError" role="alert"></span>
+              </div>
+            </div>
+          </div>
           <div class="step-navigation">
             <button class="btn ghost" id="backBtn" aria-label="Previous step">Back</button>
-            <button class="btn primary" id="nextBtn2" aria-label="Next step">Next</button>
+            <button class="btn primary" id="nextBtn2" aria-label="Next step" disabled>Next</button>
           </div>
         </div>
       </section>
       
       <section class="step-section" data-step="2">
         <div class="step-content">
-          <h1 class="step-heading">You're making progress</h1>
+          <h1 class="step-heading">Is lust a current struggle in your life?</h1>
+          <div class="form-container">
+            <div class="slider-wrapper">
+              <div class="slider-container">
+                <input 
+                  type="range" 
+                  id="struggleSlider" 
+                  class="form-slider" 
+                  min="1" 
+                  max="5" 
+                  value="3" 
+                  step="0.01"
+                  aria-label="Rate your struggle level"
+                  aria-describedby="sliderLabels"
+                />
+                <div class="slider-labels" id="sliderLabels" role="group" aria-label="Struggle rating scale">
+                  <span class="slider-label" data-value="1">Strongly Disagree</span>
+                  <span class="slider-label" data-value="5">Strongly Agree</span>
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="step-navigation">
             <button class="btn ghost" id="backBtn2" aria-label="Previous step">Back</button>
+            <button class="btn primary" id="nextBtn3" aria-label="Next step" disabled>Next</button>
           </div>
         </div>
       </section>
