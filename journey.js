@@ -20,6 +20,13 @@ class FormValidator {
       },
       step2: {
         struggleRating: null
+      },
+      step3: {
+        audioBlob: null,
+        audioUrl: null,
+        duration: null,
+        timestamp: null,
+        hasRecording: false
       }
     };
   }
@@ -67,6 +74,11 @@ class FormValidator {
     return { valid: true, error: "" };
   }
 
+  validateStep3() {
+    // Check if audio recording exists (check hasRecording flag since blob can't be stored)
+    return this.userData.step3 && this.userData.step3.hasRecording === true;
+  }
+
   canProceedToNext(stepIndex) {
     if (stepIndex === 1) {
       const name = this.userData.step1.name || "";
@@ -75,6 +87,8 @@ class FormValidator {
       // For step 2, if no rating is saved, default to 3 (slider default)
       const rating = this.userData.step2.struggleRating !== null ? this.userData.step2.struggleRating : 3;
       return this.validateStep2(rating).valid;
+    } else if (stepIndex === 3) {
+      return this.validateStep3();
     }
     return true; // Steps 0 and beyond don't require validation
   }
@@ -84,6 +98,8 @@ class FormValidator {
       this.userData.step1 = { ...this.userData.step1, ...data };
     } else if (stepNumber === 2) {
       this.userData.step2 = { ...this.userData.step2, ...data };
+    } else if (stepNumber === 3) {
+      this.userData.step3 = { ...this.userData.step3, ...data };
     }
     this.saveData();
   }
@@ -93,20 +109,420 @@ class FormValidator {
       return this.userData.step1;
     } else if (stepNumber === 2) {
       return this.userData.step2;
+    } else if (stepNumber === 3) {
+      return this.userData.step3;
     }
     return null;
+  }
+}
+
+// Audio Recording System
+class AudioRecorder {
+  constructor(validator, navigator) {
+    this.validator = validator;
+    this.navigator = navigator;
+    this.mediaRecorder = null;
+    this.audioStream = null;
+    this.audioChunks = [];
+    this.recordingStartTime = null;
+    this.timerInterval = null;
+    this.isRecording = false;
+    this.isPlaying = false;
+    this.currentAudioBlob = null; // Store blob in memory (can't be stored in localStorage)
+    
+    // DOM elements
+    this.recordBtn = document.getElementById('recordBtn');
+    this.stopBtn = document.getElementById('stopBtn');
+    this.rerecordBtn = document.getElementById('rerecordBtn');
+    this.recordingIndicator = document.getElementById('recordingIndicator');
+    this.recordingTimer = document.getElementById('recordingTimer');
+    this.recordingFeedback = document.getElementById('recordingFeedback');
+    this.audioError = document.getElementById('audioError');
+    this.audioPlayerContainer = document.getElementById('audioPlayerContainer');
+    this.audioPlayer = document.getElementById('audioPlayer');
+    this.audioPlayPauseBtn = document.getElementById('audioPlayPauseBtn');
+    this.audioPlayPauseIcon = document.getElementById('audioPlayPauseIcon');
+    this.audioProgressBar = document.getElementById('audioProgressBar');
+    this.audioProgressFill = document.getElementById('audioProgressFill');
+    this.audioCurrentTime = document.getElementById('audioCurrentTime');
+    this.audioDuration = document.getElementById('audioDuration');
+    
+    this.init();
+  }
+
+  init() {
+    if (!this.recordBtn) return;
+    
+    // Wire up button events
+    this.recordBtn.addEventListener('click', () => this.startRecording());
+    this.stopBtn.addEventListener('click', () => this.stopRecording());
+    this.rerecordBtn.addEventListener('click', () => this.deleteRecording());
+    
+    // Custom audio player controls
+    if (this.audioPlayPauseBtn) {
+      this.audioPlayPauseBtn.addEventListener('click', () => this.togglePlayback());
+    }
+    
+    if (this.audioProgressBar) {
+      this.audioProgressBar.addEventListener('click', (e) => this.seekAudio(e));
+    }
+    
+    // Audio player events
+    if (this.audioPlayer) {
+      this.audioPlayer.addEventListener('timeupdate', () => this.updateProgress());
+      this.audioPlayer.addEventListener('ended', () => this.onPlaybackEnded());
+      this.audioPlayer.addEventListener('loadedmetadata', () => this.updateDuration());
+    }
+    
+    // Load existing recording if available
+    this.loadExistingRecording();
+  }
+
+  async requestMicrophonePermission() {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Your browser does not support audio recording. Please use a modern browser like Chrome, Firefox, or Edge.');
+      }
+      
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      return stream;
+    } catch (error) {
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        throw new Error('Microphone permission was denied. Please allow microphone access and try again.');
+      } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+        throw new Error('No microphone found. Please connect a microphone and try again.');
+      } else if (error.name === 'NotSupportedError') {
+        throw new Error('Audio recording is not supported in this browser. Please use Chrome, Firefox, or Edge.');
+      } else {
+        throw new Error('Failed to access microphone. Please check your settings and try again.');
+      }
+    }
+  }
+
+  async startRecording() {
+    try {
+      this.hideError();
+      
+      // Request microphone permission
+      this.audioStream = await this.requestMicrophonePermission();
+      
+      // Determine MIME type
+      let mimeType = 'audio/webm';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'audio/ogg';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          mimeType = 'audio/wav';
+          if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = ''; // Use browser default
+          }
+        }
+      }
+      
+      // Create MediaRecorder
+      const options = mimeType ? { mimeType } : {};
+      this.mediaRecorder = new MediaRecorder(this.audioStream, options);
+      this.audioChunks = [];
+      
+      // Handle data available
+      this.mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          this.audioChunks.push(event.data);
+        }
+      };
+      
+      // Handle recording stop
+      this.mediaRecorder.onstop = () => {
+        this.processRecording();
+      };
+      
+      // Handle errors
+      this.mediaRecorder.onerror = (event) => {
+        console.error('MediaRecorder error:', event);
+        this.showError('Recording error occurred. Please try again.');
+        this.stopRecording();
+      };
+      
+      // Start recording
+      this.mediaRecorder.start(100); // Collect data every 100ms
+      this.isRecording = true;
+      this.recordingStartTime = Date.now();
+      
+      // Update UI
+      this.recordBtn.classList.add('hidden');
+      this.stopBtn.classList.remove('hidden');
+      this.rerecordBtn.classList.add('hidden');
+      this.recordingFeedback.classList.remove('hidden');
+      this.recordingIndicator.classList.add('recording');
+      this.audioPlayerContainer.classList.add('hidden');
+      
+      // Start timer
+      this.startTimer();
+      
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      this.showError(error.message);
+    }
+  }
+
+  stopRecording() {
+    if (!this.mediaRecorder || !this.isRecording) return;
+    
+    try {
+      this.mediaRecorder.stop();
+      this.isRecording = false;
+      this.stopTimer();
+      
+      // Stop all tracks
+      if (this.audioStream) {
+        this.audioStream.getTracks().forEach(track => track.stop());
+        this.audioStream = null;
+      }
+      
+      // Update UI
+      this.stopBtn.classList.add('hidden');
+      this.recordingIndicator.classList.remove('recording');
+      this.recordingFeedback.classList.add('hidden');
+      
+    } catch (error) {
+      console.error('Error stopping recording:', error);
+      this.showError('Error stopping recording. Please try again.');
+    }
+  }
+
+  processRecording() {
+    try {
+      // Create blob from chunks
+      const blob = new Blob(this.audioChunks, { type: this.mediaRecorder.mimeType || 'audio/webm' });
+      this.currentAudioBlob = blob; // Store in memory
+      
+      // Calculate duration
+      const duration = Math.round((Date.now() - this.recordingStartTime) / 1000);
+      
+      // Create object URL for playback
+      const audioUrl = URL.createObjectURL(blob);
+      
+      // Store metadata in validator (blob stored in memory, not localStorage)
+      // Note: Blob cannot be stored in localStorage, so it will be lost on page refresh
+      this.validator.saveStepData(3, {
+        audioBlob: null, // Can't store blob in localStorage
+        audioUrl: audioUrl,
+        duration: duration,
+        timestamp: Date.now(),
+        hasRecording: true // Flag to indicate recording exists
+      });
+      
+      // Update UI
+      this.showPlaybackControls();
+      this.setupAudioPlayer(audioUrl, duration);
+      
+      // Update next button state
+      this.navigator.updateNextButtonState(3);
+      
+    } catch (error) {
+      console.error('Error processing recording:', error);
+      this.showError('Error processing recording. Please try again.');
+    }
+  }
+
+  setupAudioPlayer(audioUrl, duration) {
+    if (!this.audioPlayer) return;
+    
+    this.audioPlayer.src = audioUrl;
+    // audioPlayerContainer visibility is handled by showPlaybackControls()
+    this.updateDurationDisplay(duration);
+  }
+
+  playRecording() {
+    if (!this.audioPlayer || !this.audioPlayer.src) return;
+    
+    if (this.audioPlayer.paused) {
+      this.audioPlayer.play().catch(error => {
+        console.error('Error playing audio:', error);
+        this.showError('Error playing recording. Please try again.');
+      });
+    } else {
+      this.audioPlayer.pause();
+    }
+  }
+
+  togglePlayback() {
+    this.playRecording();
+  }
+
+  onPlaybackEnded() {
+    this.isPlaying = false;
+    if (this.audioPlayPauseIcon) {
+      this.audioPlayPauseIcon.textContent = '▶';
+    }
+    if (this.audioProgressFill) {
+      this.audioProgressFill.style.width = '0%';
+    }
+    if (this.audioCurrentTime) {
+      this.audioCurrentTime.textContent = '0:00';
+    }
+  }
+
+  updateProgress() {
+    if (!this.audioPlayer) return;
+    
+    const current = this.audioPlayer.currentTime;
+    const duration = this.audioPlayer.duration || 0;
+    
+    if (duration > 0) {
+      const progress = (current / duration) * 100;
+      if (this.audioProgressFill) {
+        this.audioProgressFill.style.width = `${progress}%`;
+      }
+      if (this.audioCurrentTime) {
+        this.audioCurrentTime.textContent = this.formatTime(current);
+      }
+    }
+    
+    this.isPlaying = !this.audioPlayer.paused;
+    if (this.audioPlayPauseIcon) {
+      this.audioPlayPauseIcon.textContent = this.isPlaying ? '⏸' : '▶';
+    }
+  }
+
+  updateDuration() {
+    if (!this.audioPlayer) return;
+    const duration = this.audioPlayer.duration || 0;
+    this.updateDurationDisplay(duration);
+  }
+
+  updateDurationDisplay(duration) {
+    if (this.audioDuration) {
+      this.audioDuration.textContent = this.formatTime(duration);
+    }
+  }
+
+  seekAudio(e) {
+    if (!this.audioPlayer || !this.audioProgressBar) return;
+    
+    const rect = this.audioProgressBar.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percentage = x / rect.width;
+    const duration = this.audioPlayer.duration || 0;
+    const newTime = percentage * duration;
+    
+    this.audioPlayer.currentTime = newTime;
+  }
+
+  deleteRecording() {
+    // Clear audio data
+    if (this.audioPlayer) {
+      this.audioPlayer.pause();
+      this.audioPlayer.src = '';
+    }
+    
+    // Revoke object URL
+    const step3Data = this.validator.getStepData(3);
+    if (step3Data && step3Data.audioUrl) {
+      URL.revokeObjectURL(step3Data.audioUrl);
+    }
+    
+    // Clear blob from memory
+    this.currentAudioBlob = null;
+    
+    // Clear from validator
+    this.validator.saveStepData(3, {
+      audioBlob: null,
+      audioUrl: null,
+      duration: null,
+      timestamp: null,
+      hasRecording: false
+    });
+    
+    // Reset UI
+    this.recordBtn.classList.remove('hidden');
+    this.rerecordBtn.classList.add('hidden');
+    this.audioPlayerContainer.classList.add('hidden');
+    this.recordingFeedback.classList.add('hidden');
+    this.hideError();
+    
+    // Update next button state
+    this.navigator.updateNextButtonState(3);
+  }
+
+  showPlaybackControls() {
+    this.recordBtn.classList.add('hidden');
+    this.audioPlayerContainer.classList.remove('hidden');
+    this.rerecordBtn.classList.remove('hidden');
+  }
+
+  startTimer() {
+    this.timerInterval = setInterval(() => {
+      if (this.recordingStartTime) {
+        const elapsed = Math.floor((Date.now() - this.recordingStartTime) / 1000);
+        if (this.recordingTimer) {
+          this.recordingTimer.textContent = this.formatTime(elapsed);
+        }
+      }
+    }, 1000);
+  }
+
+  stopTimer() {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
+  }
+
+  formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  showError(message) {
+    if (this.audioError) {
+      this.audioError.textContent = message;
+      this.audioError.classList.add('show');
+    }
+  }
+
+  hideError() {
+    if (this.audioError) {
+      this.audioError.textContent = '';
+      this.audioError.classList.remove('show');
+    }
+  }
+
+  loadExistingRecording() {
+    const step3Data = this.validator.getStepData(3);
+    // Note: Object URLs are temporary and won't persist across page reloads
+    // Blobs also can't be stored in localStorage
+    // For MVP: If user refreshes page, they'll need to re-record
+    // This is acceptable for MVP - in production, you'd upload to a server
+    if (step3Data && step3Data.hasRecording && step3Data.audioUrl) {
+      // Try to restore playback if URL is still valid
+      try {
+        this.showPlaybackControls();
+        this.setupAudioPlayer(step3Data.audioUrl, step3Data.duration || 0);
+      } catch (e) {
+        // URL is invalid (page was refreshed), clear the data
+        this.validator.saveStepData(3, {
+          audioBlob: null,
+          audioUrl: null,
+          duration: null,
+          timestamp: null,
+          hasRecording: false
+        });
+      }
+    }
   }
 }
 
 // Journey Navigation System
 class JourneyNavigator {
   constructor() {
-    this.totalSteps = 3;
+    this.totalSteps = 4;
     this.currentStepIndex = 0;
     this.container = document.getElementById('journeyContainer');
     this.progressBar = document.getElementById('progressBar');
     this.steps = Array.from(document.querySelectorAll('.step-section'));
     this.validator = new FormValidator();
+    this.audioRecorder = null;
     
     this.init();
   }
@@ -117,6 +533,9 @@ class JourneyNavigator {
     
     // Setup form inputs and validation
     this.setupForms();
+    
+    // Setup audio recording
+    this.setupAudioRecording();
     
     // Setup keyboard navigation
     this.setupKeyboard();
@@ -199,6 +618,11 @@ class JourneyNavigator {
     }
   }
 
+  setupAudioRecording() {
+    // Initialize AudioRecorder
+    this.audioRecorder = new AudioRecorder(this.validator, this);
+  }
+
   validateStep1(value) {
     const result = this.validator.validateStep1(value);
     const nameInput = document.getElementById('nameInput');
@@ -255,6 +679,7 @@ class JourneyNavigator {
     // Update button states for all steps
     this.updateNextButtonState(1);
     this.updateNextButtonState(2);
+    this.updateNextButtonState(3);
   }
 
   updateNextButtonState(stepIndex) {
@@ -267,6 +692,11 @@ class JourneyNavigator {
       }
     } else if (stepIndex === 2) {
       const nextBtn = document.getElementById('nextBtn3');
+      if (nextBtn) {
+        nextBtn.disabled = !canProceed;
+      }
+    } else if (stepIndex === 3) {
+      const nextBtn = document.getElementById('nextBtn4');
       if (nextBtn) {
         nextBtn.disabled = !canProceed;
       }

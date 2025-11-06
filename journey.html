@@ -81,6 +81,69 @@
           </div>
         </div>
       </section>
+      
+      <section class="step-section" data-step="3">
+        <div class="step-content">
+          <h1 class="step-heading">Describe the first time you experienced this problem.</h1>
+          <p class="step-subheading">Tell your story - it matters</p>
+          
+          <div class="form-container">
+            <ul class="guiding-questions">
+              <li>How old were you?</li>
+              <li>Where were you?</li>
+              <li>Who was around?</li>
+              <li>How did you feel before, during and after?</li>
+            </ul>
+            
+            <p class="recording-instructions">When you submit your story, we will give you an exercise personalized to you.</p>
+            
+            <div class="audio-recording-container">
+              <div class="recording-feedback hidden" id="recordingFeedback">
+                <div class="recording-indicator" id="recordingIndicator" aria-hidden="true"></div>
+                <div class="recording-timer" id="recordingTimer" aria-live="polite">00:00</div>
+              </div>
+              
+              <div class="error-message" id="audioError" role="alert" aria-live="assertive"></div>
+              
+              <div class="recording-controls" id="recordingControls">
+                <button class="btn record" id="recordBtn" aria-label="Start recording">
+                  <span class="btn-icon">🎤</span>
+                  <span class="btn-text">Start Recording</span>
+                </button>
+                <button class="btn stop hidden" id="stopBtn" aria-label="Stop recording">
+                  <span class="btn-icon">⏹</span>
+                  <span class="btn-text">Stop Recording</span>
+                </button>
+                <div class="audio-player-container hidden" id="audioPlayerContainer">
+                  <audio id="audioPlayer" controls style="display: none;"></audio>
+                  <div class="custom-audio-player">
+                    <button class="audio-control-btn" id="audioPlayPauseBtn" aria-label="Play or pause">
+                      <span id="audioPlayPauseIcon">▶</span>
+                    </button>
+                    <div class="audio-progress-container">
+                      <div class="audio-progress-bar" id="audioProgressBar">
+                        <div class="audio-progress-fill" id="audioProgressFill"></div>
+                      </div>
+                      <div class="audio-time">
+                        <span id="audioCurrentTime">0:00</span>
+                        <span id="audioDuration">0:00</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <button class="btn rerecord hidden" id="rerecordBtn" aria-label="Record again">
+                  <span class="btn-text">Record Again</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="step-navigation">
+            <button class="btn ghost" id="backBtn3" aria-label="Previous step">Back</button>
+            <button class="btn primary" id="nextBtn4" aria-label="Submit" disabled>Submit</button>
+          </div>
+        </div>
+      </section>
     </main>
     
     <script src="journey.js"></script>

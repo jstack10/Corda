@@ -424,3 +424,334 @@ body {
   }
 }
 
+/* Step Subheading */
+.step-subheading {
+  font-size: clamp(18px, 3vw, 24px);
+  font-weight: 500;
+  margin: -24px 0 32px;
+  text-align: center;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* Guiding Questions */
+.guiding-questions {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px;
+  text-align: left;
+  max-width: 500px;
+  width: 100%;
+}
+
+/* Recording Instructions */
+.recording-instructions {
+  font-size: 16px;
+  color: var(--muted);
+  text-align: center;
+  margin: 0 0 32px;
+  padding: 16px;
+  background: rgba(91, 156, 255, 0.1);
+  border: 1px solid rgba(91, 156, 255, 0.2);
+  border-radius: 8px;
+  max-width: 500px;
+  width: 100%;
+  line-height: 1.6;
+}
+
+.guiding-questions li {
+  padding: 12px 0;
+  font-size: 18px;
+  color: var(--text);
+  position: relative;
+  padding-left: 24px;
+  line-height: 1.6;
+}
+
+.guiding-questions li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: var(--primary);
+  font-size: 24px;
+  line-height: 1;
+}
+
+/* Audio Recording Container */
+.audio-recording-container {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+/* Recording Feedback */
+.recording-feedback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  min-height: 80px;
+  justify-content: center;
+}
+
+.recording-feedback.hidden {
+  display: none;
+}
+
+/* Recording Indicator */
+.recording-indicator {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--danger);
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.recording-indicator.recording {
+  opacity: 1;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.7);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 20px rgba(255, 107, 107, 0);
+  }
+}
+
+/* Recording Timer */
+.recording-timer {
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  min-width: 80px;
+  text-align: center;
+}
+
+/* Recording Controls */
+.recording-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  align-items: center;
+}
+
+.btn.record {
+  background: linear-gradient(180deg, var(--danger), #e55555);
+  border-color: #cc4a4a;
+  color: white;
+  min-width: 200px;
+  padding: 16px 32px;
+  font-size: 18px;
+}
+
+.btn.record:hover:not(:disabled) {
+  background: linear-gradient(180deg, #ff7a7a, #ff5252);
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+}
+
+.btn.stop {
+  background: linear-gradient(180deg, var(--danger), #e55555);
+  border-color: #cc4a4a;
+  color: white;
+  min-width: 200px;
+  padding: 16px 32px;
+  font-size: 18px;
+  border-radius: 12px;
+}
+
+.btn.stop:hover:not(:disabled) {
+  background: linear-gradient(180deg, #ff7a7a, #ff5252);
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+}
+
+.btn.play {
+  background: linear-gradient(180deg, var(--accent), #1db894);
+  border-color: #1aa882;
+  color: white;
+  min-width: 200px;
+  padding: 16px 32px;
+  font-size: 18px;
+}
+
+.btn.play:hover:not(:disabled) {
+  background: linear-gradient(180deg, #2dd4b8, #21cba6);
+  box-shadow: 0 4px 12px rgba(33, 203, 166, 0.4);
+}
+
+.btn.rerecord {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--muted);
+  min-width: 200px;
+}
+
+.btn.rerecord:hover {
+  background: rgba(12, 18, 32, 0.6);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.btn-icon {
+  margin-right: 8px;
+  font-size: 20px;
+}
+
+.btn-text {
+  vertical-align: middle;
+}
+
+/* Error Message */
+.error-message {
+  color: var(--danger);
+  font-size: 14px;
+  text-align: center;
+  padding: 12px 16px;
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  border-radius: 8px;
+  min-height: 20px;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  max-width: 100%;
+}
+
+.error-message.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* Audio Player Container */
+.audio-player-container {
+  width: 100%;
+  max-width: 500px;
+  margin: 0;
+}
+
+.audio-player-container.hidden {
+  display: none;
+}
+
+.custom-audio-player {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  background: var(--panel);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  width: 100%;
+  min-height: 60px;
+}
+
+.audio-control-btn {
+  appearance: none;
+  border: none;
+  background: var(--primary);
+  color: white;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.audio-control-btn:hover {
+  background: var(--primary-strong);
+  transform: scale(1.05);
+}
+
+.audio-control-btn:active {
+  transform: scale(0.95);
+}
+
+.audio-progress-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.audio-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.audio-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  border-radius: 3px;
+  width: 0%;
+  transition: width 0.1s linear;
+}
+
+.audio-time {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Responsive Audio Styles */
+@media (max-width: 640px) {
+  .guiding-questions li {
+    font-size: 16px;
+    padding: 10px 0;
+    padding-left: 20px;
+  }
+  
+  .recording-indicator {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .recording-timer {
+    font-size: 28px;
+  }
+  
+  .btn.record,
+  .btn.stop,
+  .btn.play,
+  .btn.rerecord {
+    min-width: 100%;
+    width: 100%;
+  }
+  
+  .custom-audio-player {
+    padding: 12px;
+    gap: 12px;
+  }
+  
+  .audio-control-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+  }
+}
+
